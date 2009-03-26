@@ -229,9 +229,19 @@
 
 - (void)parser: (NSXMLParser *)parser didEndElement: (NSString *)elementName namespaceURI: (NSString *)namespaceURI qualifiedName: (NSString *)qualifiedName {
     if ([elementName isEqualToString: @"name"]) {
-        [self setElementKey: [myElementValue stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+        NSString *elementStringValue = [myElementValue stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        
+        [self setElementKey: elementStringValue];
+        
+        [myElementValue release];
     } else if ([elementName isEqualToString: @"value"]) {
-        id previousElementValue = myElementValue;
+        NSString *elementStringValue;
+        
+        if ((myElementType != XMLRPCEventBasedParserElementTypeArray) && (myElementType != XMLRPCEventBasedParserElementTypeDictionary)) {
+            elementStringValue = [myElementValue stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            
+            [myElementValue release];
+        }
         
         switch (myElementType) {
             case XMLRPCEventBasedParserElementTypeError:
@@ -241,39 +251,27 @@
             case XMLRPCEventBasedParserElementTypeDictionary:
                 break;
             case XMLRPCEventBasedParserElementTypeInteger:
-                myElementValue = [self parseInteger: (NSString *)previousElementValue];
-                
-                [previousElementValue release];
+                myElementValue = [self parseInteger: elementStringValue];
                 
                 break;
             case XMLRPCEventBasedParserElementTypeDouble:
-                myElementValue = [self parseDouble: (NSString *)previousElementValue];
-                
-                [previousElementValue release];
+                myElementValue = [self parseDouble: elementStringValue];
                 
                 break;
             case XMLRPCEventBasedParserElementTypeBoolean:
-                myElementValue = (id)[self parseBoolean: (NSString *)previousElementValue];
-                
-                [previousElementValue release];
+                myElementValue = (id)[self parseBoolean: elementStringValue];
                 
                 break;
             case XMLRPCEventBasedParserElementTypeString:
-                myElementValue = [self parseString: (NSString *)previousElementValue];
-                
-                [previousElementValue release];
+                myElementValue = [self parseString: elementStringValue];
                 
                 break;
             case XMLRPCEventBasedParserElementTypeDate:
-                myElementValue = [self parseDate: (NSString *)previousElementValue];
-                
-                [previousElementValue release];
+                myElementValue = [self parseDate: elementStringValue];
                 
                 break;
             case XMLRPCEventBasedParserElementTypeData:
-                myElementValue = [self parseData: (NSString *)previousElementValue];
-                
-                [previousElementValue release];
+                myElementValue = [self parseData: elementStringValue];
                 
                 break;
             default:
@@ -288,8 +286,6 @@
     }
     
     if ([elementName isEqualToString: @"name"] || [elementName isEqualToString: @"value"]) {
-        [myElementValue release];
-        
         myElementValue = nil;
     }
 }
@@ -432,7 +428,7 @@
 }
 
 - (NSString *)parseString: (NSString *)value {
-    return [value stringByTrimmingCharactersInSet: [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return [[value retain] autorelease];
 }
 
 - (NSDate *)parseDate: (NSString *)value {
